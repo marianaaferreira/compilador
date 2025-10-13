@@ -37,6 +37,7 @@ public class Main {
             return;
         }
 
+        // ana esteve aqui
         try {
             AnalisadorLexico parser = new AnalisadorLexico(new StringReader(codigo));
             parser.programa();
