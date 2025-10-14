@@ -25,6 +25,13 @@ public class Janela extends JFrame {
     public Janela() {
         super("Compilador");
         setDefaultCloseOperation(DO_NOTHING_ON_CLOSE);
+        setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
+        addWindowListener(new WindowAdapter() {
+            @Override
+            public void windowClosing(WindowEvent e) {
+                fecharJanela();
+            }
+        });
         setSize(1000, 680);
         setLocationRelativeTo(null);
 
