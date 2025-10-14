@@ -5,7 +5,18 @@ import org.example.AnalisadorLexicoConstants;import java.util.*;
 import java.io.*;
 public class AnalisadorLexico implements AnalisadorLexicoConstants {
     public static void main(String[] args) {
-
+        try {
+            AnalisadorLexico parser = new AnalisadorLexico(System.in);
+            parser.programa();
+            System.out.println("Programa compilado com sucesso.");
+        } catch (ParseException e) {
+            System.err.println(e.getMessage());
+        } catch (TokenMgrError tme) {
+            System.err.println("Erro l\u00e9xico: " + tme.getMessage());
+        } catch (Exception ex) {
+            System.err.println("Erro inesperado: " + ex.getMessage());
+            ex.printStackTrace(System.err);
+        }
     }
 
 //sintatico
@@ -18,29 +29,22 @@ void programa() throws ParseException {
     lista_de_comandos();
     jj_consume_token(END);
     jj_consume_token(PONTO);
+    jj_consume_token(0);
 }
 
   final public void opcional_id() throws ParseException {
-    switch ((jj_ntk==-1)?jj_ntk_f():jj_ntk) {
-    case IDENTIFICADOR:{
-      jj_consume_token(IDENTIFICADOR);
-      break;
-      }
-    default:
-      jj_la1[0] = jj_gen;
-      ;
-    }
+    jj_consume_token(IDENTIFICADOR);
 }
 
   final public void opcional_def() throws ParseException {
     switch ((jj_ntk==-1)?jj_ntk_f():jj_ntk) {
     case DEFINE:{
       jj_consume_token(DEFINE);
-      declaracao_de_variaveis();
+      lista_declaracao_var();
       break;
       }
     default:
-      jj_la1[1] = jj_gen;
+      jj_la1[0] = jj_gen;
       ;
     }
 }
@@ -64,7 +68,7 @@ void programa() throws ParseException {
       break;
       }
     default:
-      jj_la1[2] = jj_gen;
+      jj_la1[1] = jj_gen;
       jj_consume_token(-1);
       throw new ParseException();
     }
@@ -85,7 +89,7 @@ void programa() throws ParseException {
       break;
       }
     default:
-      jj_la1[3] = jj_gen;
+      jj_la1[2] = jj_gen;
       jj_consume_token(-1);
       throw new ParseException();
     }
@@ -100,8 +104,8 @@ void programa() throws ParseException {
 
   final public void declaracao_de_variaveis_aux() throws ParseException {
     switch ((jj_ntk==-1)?jj_ntk_f():jj_ntk) {
-    case IGUAL:{
-      jj_consume_token(IGUAL);
+    case ATRIBUICAO:{
+      jj_consume_token(ATRIBUICAO);
       valor();
       jj_consume_token(PONTO_E_VIRGULA);
       break;
@@ -118,7 +122,7 @@ void programa() throws ParseException {
       break;
       }
     default:
-      jj_la1[4] = jj_gen;
+      jj_la1[3] = jj_gen;
       jj_consume_token(-1);
       throw new ParseException();
     }
@@ -126,8 +130,8 @@ void programa() throws ParseException {
 
   final public void declaracao_de_variaveis_aux2() throws ParseException {
     switch ((jj_ntk==-1)?jj_ntk_f():jj_ntk) {
-    case IGUAL:{
-      jj_consume_token(IGUAL);
+    case ATRIBUICAO:{
+      jj_consume_token(ATRIBUICAO);
       jj_consume_token(ABRE_CHAVES);
       valores();
       jj_consume_token(FECHA_CHAVES);
@@ -135,9 +139,26 @@ void programa() throws ParseException {
       break;
       }
     default:
+      jj_la1[4] = jj_gen;
+      ;
+    }
+}
+
+  final public void lista_declaracao_var() throws ParseException {
+    declaracao_de_variaveis();
+    switch ((jj_ntk==-1)?jj_ntk_f():jj_ntk) {
+    case IDENTIFICADOR:{
+      lista_declaracao_var_aux();
+      break;
+      }
+    default:
       jj_la1[5] = jj_gen;
       ;
     }
+}
+
+  final public void lista_declaracao_var_aux() throws ParseException {
+    lista_declaracao_var();
 }
 
   final public void lista_de_identificadores() throws ParseException {
@@ -234,8 +255,8 @@ void programa() throws ParseException {
 
   final public void comando_atribuicao_aux() throws ParseException {
     switch ((jj_ntk==-1)?jj_ntk_f():jj_ntk) {
-    case IGUAL:{
-      jj_consume_token(IGUAL);
+    case ATRIBUICAO:{
+      jj_consume_token(ATRIBUICAO);
       expressao();
       jj_consume_token(PONTO_E_VIRGULA);
       break;
@@ -244,7 +265,7 @@ void programa() throws ParseException {
       jj_consume_token(ABRE_COLCHETES);
       jj_consume_token(CONSTANTE_INTEIRA);
       jj_consume_token(FECHA_COLCHETES);
-      jj_consume_token(IGUAL);
+      jj_consume_token(ATRIBUICAO);
       expressao();
       jj_consume_token(PONTO_E_VIRGULA);
       break;
@@ -619,10 +640,10 @@ Token tok = e.currentToken.next;
 	   jj_la1_init_1();
 	}
 	private static void jj_la1_init_0() {
-	   jj_la1_0 = new int[] {0x0,0x4,0x1e0,0x0,0x4400000,0x0,0x800000,0x800000,0x21e00,0x21e00,0x4000000,0x6000000,0x0,0x800000,0x4000,0x0,0x0,0xc0000000,0xc0000000,0x0,0x0,0x0,0x1000000,};
+	   jj_la1_0 = new int[] {0x4,0x1e0,0x0,0x4480000,0x80000,0x0,0x800000,0x800000,0x21e00,0x21e00,0x4080000,0x6000000,0x0,0x800000,0x4000,0x0,0x0,0xc0000000,0xc0000000,0x0,0x0,0x0,0x1000000,};
 	}
 	private static void jj_la1_init_1() {
-	   jj_la1_1 = new int[] {0x4000,0x0,0x0,0x38000,0x20,0x20,0x0,0x0,0x0,0x0,0x20,0x0,0x3c000,0x0,0x0,0x7e0,0x7e0,0x1000,0x1000,0x81b,0x81b,0x4,0x7e000,};
+	   jj_la1_1 = new int[] {0x0,0x0,0x38000,0x0,0x0,0x4000,0x0,0x0,0x0,0x0,0x0,0x0,0x3c000,0x0,0x0,0x7e0,0x7e0,0x1000,0x1000,0x81b,0x81b,0x4,0x7e000,};
 	}
 
   /** Constructor with InputStream. */
