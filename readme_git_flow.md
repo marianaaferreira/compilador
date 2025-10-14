@@ -91,7 +91,3 @@ Após enviar a branch, acesse o repositório no GitHub. Você verá a opção:
 
 **“Compare & pull request”** → clique e siga os passos para revisão e merge.
 
----
-
-Se quiser que eu altere ou adicione mais seções, é só avisar!
-
