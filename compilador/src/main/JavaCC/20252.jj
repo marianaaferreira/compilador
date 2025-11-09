@@ -5,49 +5,49 @@ options {
 
 PARSER_BEGIN(Linguagem20252)
 
-import org.example.Linguagem20252Constants;
 import java.util.*;
 import java.io.*;
 
 public class Linguagem20252 {
+
     public static final List<String> parseErrors = new ArrayList<>();
+    public static final List<String> lexicalErrors = new ArrayList<>();
 
     public static void clearParseErrors() {
         parseErrors.clear();
+        lexicalErrors.clear();
     }
 
     public static void printParseErrors() {
-        if (parseErrors.isEmpty()) return;
-        System.err.println("Erros sintáticos encontrados:");
         for (String msg : parseErrors) {
-            System.err.println("  - " + msg);
+            System.out.println(msg);
         }
     }
 
     void reportParseError(ParseException e) {
-        Token tok = e.currentToken.next;
-        String found = (tok == null) ? "EOF" : tok.image;
-        int line = (tok == null) ? -1 : tok.beginLine;
-        int col  = (tok == null) ? -1 : tok.beginColumn;
+            Token tok = e.currentToken.next;
+            String found = (tok == null) ? "EOF" : tok.image;
+            int line = (tok == null) ? -1 : tok.beginLine;
+            int col  = (tok == null) ? -1 : tok.beginColumn;
 
-        StringBuilder expected = new StringBuilder();
-        if (e.expectedTokenSequences != null) {
-            for (int i = 0; i < e.expectedTokenSequences.length; i++) {
-                int[] seq = e.expectedTokenSequences[i];
-                if (i > 0) expected.append(" | ");
-                for (int j = 0; j < seq.length; j++) {
-                    expected.append(Linguagem20252Constants.tokenImage[seq[j]]).append(" ");
+            StringBuilder expected = new StringBuilder();
+            if (e.expectedTokenSequences != null) {
+                for (int i = 0; i < e.expectedTokenSequences.length; i++) {
+                    int[] seq = e.expectedTokenSequences[i];
+                    if (i > 0) expected.append(" | ");
+                    for (int j = 0; j < seq.length; j++) {
+                        expected.append(Linguagem20252Constants.tokenImage[seq[j]]).append(" ");
+                    }
                 }
+            } else {
+                expected.append("token válido");
             }
-        } else {
-            expected.append("token válido");
-        }
 
-        String msg = "Erro sintático na linha " + line + ", coluna " + col +
-                     ": encontrado '" + found + "'. Esperado: " + expected.toString();
-        Linguagem20252.parseErrors.add(msg);
-        System.err.println(msg);
-    }
+            String msg = "Erro sintático na linha " + line + ", coluna " + col +
+                         ": encontrado '" + found + "'. Esperado: " + expected.toString();
+            Linguagem20252.parseErrors.add(msg);
+            System.err.println(msg);
+        }
 
     public static void main(String[] args) {
         try {
@@ -55,17 +55,20 @@ public class Linguagem20252 {
             Linguagem20252 parser = new Linguagem20252(System.in);
             parser.programa();
 
-            if (parseErrors.isEmpty()) {
-                System.out.println("Programa compilado com sucesso.");
-            } else {
-                System.out.println("Análise concluída com erros sintáticos:");
+            if (!lexicalErrors.isEmpty()) {
+                System.out.println("Foram encontrados erros léxicos:");
+                for (String msg : lexicalErrors) System.out.println("  - " + msg);
+            } else if (!parseErrors.isEmpty()) {
+                System.out.println("Foram encontrados erros sintáticos:");
                 printParseErrors();
+            } else {
+                System.out.println("Programa compilado com sucesso.");
             }
 
         } catch (ParseException e) {
-            System.err.println("Erro fatal: " + e.getMessage());
+            System.err.println("Erro sintático: " + e.getMessage());
         } catch (TokenMgrError tme) {
-            System.err.println("Erro léxico: " + tme.getMessage());
+            System.err.println("Erro léxico fatal: " + tme.getMessage());
         } catch (Exception ex) {
             System.err.println("Erro inesperado: " + ex.getMessage());
             ex.printStackTrace(System.err);
@@ -75,7 +78,22 @@ public class Linguagem20252 {
 
 PARSER_END(Linguagem20252)
 
+
 // ---------------------- TOKENS ------------------------
+TOKEN_MGR_DECLS : {
+    public void LexicalError(boolean EOFSeen, int lexState, int errorLine, int errorColumn,
+                             String errorAfter, char curChar) {
+        String message;
+        if (EOFSeen) {
+            message = "Erro léxico no fim do arquivo após \"" + errorAfter + "\".";
+        } else {
+            message = "Erro léxico na linha " + errorLine + ", coluna " + errorColumn +
+                       ": caractere inesperado '" + curChar + "'";
+        }
+        Linguagem20252.lexicalErrors.add(message);
+    }
+}
+
 
 TOKEN :
 {
