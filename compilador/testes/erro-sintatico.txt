@@ -1,0 +1,8 @@
+begin sint3
+define
+    flag1 : flag = true;
+start
+    if flag1 = true then
+        show("ok");
+    end;
+end.

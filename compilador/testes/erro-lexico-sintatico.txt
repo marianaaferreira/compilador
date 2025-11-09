@@ -1,0 +1,4 @@
+beggin teste2
+start
+    show("Erro na palavra reservada");
+end.

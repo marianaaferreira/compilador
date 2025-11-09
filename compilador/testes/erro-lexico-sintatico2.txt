@@ -1,0 +1,7 @@
+begin teste4
+define
+    x : num = 10;
+start
+    set x == 5@;
+    sho("teste");
+end.

@@ -1,0 +1,10 @@
+begin prog1
+define
+    x : num = 10;
+    y : real = 3.5;
+    nome : text = "Mariana";
+    ativo : flag = 1;
+start
+    show("Valor de x:", x);
+    show("Status:", ativo);
+end.
