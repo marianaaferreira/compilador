@@ -3,11 +3,12 @@
 package org.example;
 import java.util.*;
 import java.io.*;
+import org.example.Semantico;
 
 /** Token Manager. */
 @SuppressWarnings ("unused")
 public class Linguagem20252TokenManager implements Linguagem20252Constants {
-   protected void LexicalError(boolean EOFSeen, int lexState, int errorLine, int errorColumn,
+    public void LexicalError(boolean EOFSeen, int lexState, int errorLine, int errorColumn,
                              String errorAfter, char curChar) {
         String message;
         if (EOFSeen) {

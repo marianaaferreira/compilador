@@ -7,6 +7,7 @@ PARSER_BEGIN(Linguagem20252)
 
 import java.util.*;
 import java.io.*;
+import org.example.Semantico;
 
 public class Linguagem20252 {
 
@@ -78,8 +79,6 @@ public class Linguagem20252 {
 
 PARSER_END(Linguagem20252)
 
-
-// ---------------------- TOKENS ------------------------
 TOKEN_MGR_DECLS : {
     public void LexicalError(boolean EOFSeen, int lexState, int errorLine, int errorColumn,
                              String errorAfter, char curChar) {
@@ -169,7 +168,7 @@ SKIP :
 | < COMENTARIO_BLOCO: ("/*"(<ASCII> | "\n")* "*/") >
 }
 
-// ---------------------- ERROS LÉXICOS ------------------------
+// ERROS LÉXICOS
 
 TOKEN :{
   < CONST_INT_INVALIDA: (<DIGITO><DIGITO><DIGITO>(<DIGITO>)+)>
@@ -185,192 +184,284 @@ TOKEN :{
 | < SIMBOLO_INVALIDO: ~[] >
 }
 
-// ---------------------- SINTÁTICO ------------------------
-
-void programa() :{}
-{
-  <BEGIN> opcional_id() opcional_def() <START> lista_de_comandos() <END> <PONTO> <EOF>
-}
-
-void opcional_id() :{}
-{ (<IDENTIFICADOR>)? }
-
-void opcional_def() :{}
-{ (<DEFINE> lista_declaracao_var())? }
-
-void tipo():{}
-{ <NUM> | <REAL> | <TEXT> | <FLAG> }
-
-void valor(): {}
-{ <CONSTANTE_INTEIRA> | <CONSTANTE_REAL> | <CONSTANTE_LITERAL> }
-
-void declaracao_de_variaveis():{}
-{ lista_de_identificadores() <DOIS_PONTOS> tipo() declaracao_de_variaveis_aux() }
-
-void declaracao_de_variaveis_aux():{}
-{
-    <ATRIBUICAO> valor() <PONTO_E_VIRGULA>
-  | <ABRE_COLCHETES> <CONSTANTE_INTEIRA> <FECHA_COLCHETES> declaracao_de_variaveis_aux2()
-  | <PONTO_E_VIRGULA>
-}
-
-void declaracao_de_variaveis_aux2():{}
-{ (<ATRIBUICAO> <ABRE_CHAVES> valores() <FECHA_CHAVES> <PONTO_E_VIRGULA>)? }
-
-void lista_declaracao_var():{}
+// Sintatico e lexico
+void programa() : {}
 {
   try {
-    declaracao_de_variaveis() (lista_declaracao_var_aux())?
+    <BEGIN>
+    identificador_programa()
+    declaracao()
+    <START>
+    lista_de_comandos()
+    { Semantico.P2(); }
+    <END> <PONTO> <EOF>
   } catch (ParseException e) {
     reportParseError(e);
-    skipUntil(new int[]{PONTO_E_VIRGULA, START});
-    if (getToken(1).kind == PONTO_E_VIRGULA) getNextToken();
+    skipUntil(new int[] {
+        Linguagem20252Constants.END,
+        Linguagem20252Constants.PONTO
+    });
   }
 }
 
-void lista_declaracao_var_aux():{}
-{ lista_declaracao_var() }
-
-void lista_de_identificadores():{}
-{ <IDENTIFICADOR> lista_de_identificadores_aux() }
-
-void lista_de_identificadores_aux():{}
-{ (<VIRGULA> lista_de_identificadores())? }
-
-void valores(): {}
-{ valor() valores_aux() }
-
-void valores_aux(): {}
-{ (<VIRGULA> valores())? }
-
-// ---------------------- COMANDOS ------------------------
-
-void lista_de_comandos():{}
-{
-  {
-    while (true) {
-      Token la = getToken(1);
-      if (la == null) break;
-      if (la.kind == END || la.kind == PONTO || la.kind == FECHA_CHAVES)
-        break;
-
-      try {
-        comando();
-      } catch (ParseException e) {
-        reportParseError(e);
-        skipUntil(new int[]{PONTO_E_VIRGULA, END, PONTO, FECHA_CHAVES});
-        Token t = getToken(1);
-        if (t != null && t.kind == PONTO_E_VIRGULA) getNextToken();
-      }
-    }
-  }
+void identificador_programa() : { Token id; } {
+  ( id=<IDENTIFICADOR> { Semantico.P1(id.image); } )?
 }
 
-void comando():{}
+
+void declaracao() : {}
 {
   try {
-    comando_atribuicao()
-  | comando_saida_dados()
-  | comando_repeticao()
-  | comando_selecao()
-  | comando_entrada_dados()
+    ( <DEFINE> { Semantico.D0(); } lista_de_declaracao() )?
   } catch (ParseException e) {
     reportParseError(e);
-    skipUntil(new int[]{PONTO_E_VIRGULA, END});
-    if (getToken(1).kind == PONTO_E_VIRGULA) getNextToken();
+    skipUntil(new int[] {
+        Linguagem20252Constants.START,
+        Linguagem20252Constants.END
+    });
   }
 }
 
-void comando_atribuicao():{}
-{ <SET> <IDENTIFICADOR> comando_atribuicao_aux() }
-
-void comando_atribuicao_aux():{}
-{
-  (<ATRIBUICAO> expressao() <PONTO_E_VIRGULA>)
-| (<ABRE_COLCHETES> <CONSTANTE_INTEIRA> <FECHA_COLCHETES> <ATRIBUICAO> expressao() <PONTO_E_VIRGULA>)
+void lista_de_declaracao() : {} {
+  declaracao_variaveis() lista_de_declaracao_prim()
 }
 
-void comando_entrada_dados():{}
-{ <READ> <ABRE_PARENTESES> <IDENTIFICADOR> cmd_dados() }
+void lista_de_declaracao_prim() : {} {
+  ( declaracao_variaveis() lista_de_declaracao_prim() )?
+}
 
-void cmd_dados():{}
+void declaracao_variaveis() : {}
 {
+  lista_de_identificadores()
+  <DOIS_PONTOS>
+  tipo()
+  decl_do_vetor()
+  <PONTO_E_VIRGULA>
+  { Semantico.D6(); }
+}
+
+void lista_de_identificadores() : { Token id; } {
+  id=<IDENTIFICADOR> { Semantico.D1(id.image); }
+  lista_de_identificadores_prim()
+}
+
+void lista_de_identificadores_prim() : { Token id; } {
+  ( <VIRGULA> id=<IDENTIFICADOR> { Semantico.D1(id.image); } lista_de_identificadores_prim() )?
+}
+
+void tipo() : {} {
+   <NUM>  { Semantico.T(1); }
+  | <REAL> { Semantico.T(2); }
+  | <TEXT> { Semantico.T(3); }
+  | <FLAG> { Semantico.T(4); }
+}
+
+void decl_do_vetor() : { Token c; } {
+   <ABRE_COLCHETES> c=<CONSTANTE_INTEIRA> { Semantico.V1(Integer.parseInt(c.image)); } <FECHA_COLCHETES>
+      inic_vetor() { Semantico.V2(); }
+
+  | inic_escalar() { /* Semantico.E2() deve ser chamada dentro de inic_escalar quando apropriado */ }
+
+}
+
+void inic_vetor() : {} {
+  ( <ATRIBUICAO> <ABRE_CHAVES> lista_valores_vetor() <FECHA_CHAVES> { Semantico.IV_End(); } )?
+}
+
+void inic_escalar() : {} {
+  ( <ATRIBUICAO> valor() { Semantico.IE(); } )?
+}
+
+void lista_valores_vetor() : {} {
+  valor() { Semantico.VAL(); } lista_valores_vetor_prim()
+}
+
+void lista_valores_vetor_prim() : {} {
+  ( <VIRGULA> valor() { Semantico.VAL(); } lista_valores_vetor_prim() )?
+}
+
+void valor() : { Token t; } {
+
+    (t=<CONSTANTE_INTEIRA> { Semantico.C1(Integer.parseInt(t.image)); })
+  | (t=<CONSTANTE_REAL> { Semantico.C2(Double.parseDouble(t.image)); })
+  | (t=<CONSTANTE_LITERAL> { Semantico.C3(t.image); })
+  | <TRUE>  { Semantico.C4(); }
+  | <FALSE> { Semantico.C5(); }
+
+}
+
+void lista_de_comandos() : {}
+{
+  try {
+    comando() lista_de_comandos_prim()
+  } catch (ParseException e) {
+    reportParseError(e);
+    skipUntil(new int[] {
+        Linguagem20252Constants.END,
+        Linguagem20252Constants.ELSE,
+        Linguagem20252Constants.PONTO_E_VIRGULA
+    });
+  }
+}
+
+void lista_de_comandos_prim() : {} {
+  ( comando() lista_de_comandos_prim() )?
+}
+
+void comando() : {}
+{
+  try {
+    atribuicao() | entrada() | saida() | selecao() | repeticao()
+  } catch (ParseException e) {
+    reportParseError(e);
+    skipUntil(new int[] {
+        Linguagem20252Constants.PONTO_E_VIRGULA,
+        Linguagem20252Constants.END,
+        Linguagem20252Constants.ELSE
+    });
+  }
+}
+
+void atribuicao() : { Token id; }
+{
+  try {
+    <SET> id=<IDENTIFICADOR> { Semantico.A1(id.image); }
+    indice() { Semantico.A2(); }
+    <ATRIBUICAO>
+    expressao() { Semantico.A3(); }
+    <PONTO_E_VIRGULA>
+  } catch (ParseException e) {
+    reportParseError(e);
+    skipUntil(new int[] {
+        Linguagem20252Constants.PONTO_E_VIRGULA
+    });
+  }
+}
+
+void indice() : {} {
+  ( <ABRE_COLCHETES> expressao() { Semantico.I1(); } <FECHA_COLCHETES> )?
+}
+
+void entrada() : { Token id; } {
+  <READ> <ABRE_PARENTESES>
+  id=<IDENTIFICADOR> { Semantico.R1(id.image); }
+  ( <ABRE_COLCHETES> expressao() { Semantico.R2(); } <FECHA_COLCHETES> )?
   <FECHA_PARENTESES> <PONTO_E_VIRGULA>
-| <ABRE_COLCHETES> <CONSTANTE_INTEIRA> <FECHA_COLCHETES> <FECHA_PARENTESES> <PONTO_E_VIRGULA>
+  { Semantico.R_Generate(); }
 }
 
-void comando_saida_dados():{}
-{ <SHOW> <ABRE_PARENTESES> lista_id_const() <FECHA_PARENTESES> <PONTO_E_VIRGULA> }
-
-void lista_id_const():{}
-{ valor() lista() | <IDENTIFICADOR> lista() }
-
-void lista():{}
-{ (<VIRGULA> lista_id_const())? }
-
-void comando_selecao():{}
-{
-  try {
-    <IF> expressao() <THEN> lista_de_comandos() cmd_else() <END> <PONTO_E_VIRGULA>
-  } catch (ParseException e) {
-    reportParseError(e);
-    skipUntil(new int[]{PONTO_E_VIRGULA, END, ELSE});
-    if (getToken(1).kind == PONTO_E_VIRGULA) getNextToken();
-  }
+void saida() : {} {
+  <SHOW> <ABRE_PARENTESES>
+  lista_de_saida()
+  <FECHA_PARENTESES> <PONTO_E_VIRGULA>
 }
 
-void cmd_else():{}
-{ (<ELSE> lista_de_comandos())? }
-
-void comando_repeticao():{}
-{
-  try {
-    <LOOP> <WHILE> expressao() lista_de_comandos() <END> <PONTO_E_VIRGULA>
-  } catch (ParseException e) {
-    reportParseError(e);
-    skipUntil(new int[]{PONTO_E_VIRGULA, END});
-    if (getToken(1).kind == PONTO_E_VIRGULA) getNextToken();
-  }
+void lista_de_saida() : {} {
+  item() lista_de_saida_prim()
 }
 
-// ---------------------- EXPRESSÕES ------------------------
-
-void expressao() :{}
-{ expressao_aux() }
-
-void expressao_aux() :{}
-{
-  expressao_arit()
-  ( ( <IGUAL> | <DIFERENTE> | <MENOR> | <MAIOR> | <MENOR_OU_IGUAL> | <MAIOR_OU_IGUAL> ) expressao_arit() )?
+void lista_de_saida_prim() : {} {
+  ( <VIRGULA> item() lista_de_saida_prim() )?
 }
 
-void expressao_arit() :{}
-{ termo2() menor_prioridade() }
+void item() : { Token id; Token t; } {
 
-void menor_prioridade() :{}
-{ ( ( <MAIS> | <MENOS> | <OU> ) termo2() )* }
+    id=<IDENTIFICADOR> { Semantico.S2(id.image); }
+    ( <ABRE_COLCHETES> expressao() { Semantico.S3(); } <FECHA_COLCHETES> )?
+    { Semantico.S_Generate(); }
+  |
+    (t=<CONSTANTE_INTEIRA> { Semantico.K1(Integer.parseInt(t.image)); })
+  |
+    (t=<CONSTANTE_REAL> { Semantico.K2(Double.parseDouble(t.image)); })
+  |
+    (t=<CONSTANTE_LITERAL> { Semantico.K3(t.image); })
 
-void termo2() :{}
-{ termo1() media_prioridade() }
-
-void media_prioridade() :{}
-{ ( ( <VEZES> | <DIVIDIR> | <DIVISAO_INTEIRA> | <RESTO_DIVISAO> | <E> ) termo1() )* }
-
-void termo1() :{}
-{ elemento() ( <POTENCIA> elemento() )* }
-
-void elemento() :{}
-{
-  <IDENTIFICADOR>
-| <CONSTANTE_INTEIRA>
-| <CONSTANTE_REAL>
-| <CONSTANTE_LITERAL>
-| <CONSTANTE_LOGICA>
-| <ABRE_PARENTESES> expressao() <FECHA_PARENTESES>
-| <NAO> <ABRE_PARENTESES> expressao() <FECHA_PARENTESES>
 }
 
-// ---------------------- RECUPERAÇÃO DE ERROS ------------------------
+void selecao() : {} {
+  <IF> expressao() { Semantico.F1(); }
+  <THEN>
+  lista_de_comandos()
+  ( <ELSE> { Semantico.F2(); } lista_de_comandos() )?
+  <END> <PONTO_E_VIRGULA>
+  { Semantico.F3(); }
+}
+
+void repeticao() : {} {
+  <LOOP> <WHILE> expressao() { Semantico.L1(); }
+  lista_de_comandos() { Semantico.L2(); }
+  <END> <PONTO_E_VIRGULA>
+}
+
+void expressao() : {} {
+  expressao_arit_logica() expressao_relacional()
+}
+
+void expressao_relacional() : {} {
+  ( <IGUAL> expressao_arit_logica() { Semantico.REQ(); }
+  | <DIFERENTE> expressao_arit_logica() { Semantico.RNEQ(); }
+  | <MENOR> expressao_arit_logica() { Semantico.RLT(); }
+  | <MAIOR> expressao_arit_logica() { Semantico.RGT(); }
+  | <MENOR_OU_IGUAL> expressao_arit_logica() { Semantico.RLE(); }
+  | <MAIOR_OU_IGUAL> expressao_arit_logica() { Semantico.RGE(); }
+  )?
+}
+
+void expressao_arit_logica() : {} {
+  termo2() menor_prioridade()
+}
+
+void menor_prioridade() : {} {
+  ( <MAIS> termo2() { Semantico.ADD(); } menor_prioridade()
+  | <MENOS> termo2() { Semantico.SUB(); } menor_prioridade()
+  | <OU> termo2() { Semantico.OR(); } menor_prioridade()
+  )?
+}
+
+void termo2() : {} {
+  termo1() media_prioridade()
+}
+
+void media_prioridade() : {} {
+  ( <VEZES> termo1() { Semantico.MUL(); } media_prioridade()
+  | <DIVIDIR> termo1() { Semantico.DIV(); } media_prioridade()
+  | <DIVISAO_INTEIRA> termo1() { Semantico.MOD(); } media_prioridade()
+  | <RESTO_DIVISAO> termo1() { Semantico.REM(); } media_prioridade()
+  | <E> termo1() { Semantico.AND(); } media_prioridade()
+  )?
+}
+
+void termo1() : {} {
+  elemento() maior_prioridade()
+}
+
+void maior_prioridade() : {} {
+  ( <POTENCIA> elemento() { Semantico.POW(); } maior_prioridade() )?
+}
+
+void elemento() : { Token id; Token t; } {
+
+    id=<IDENTIFICADOR> { Semantico.E1(id.image); }
+    ( <ABRE_COLCHETES> expressao() { Semantico.E2_Indice(); } <FECHA_COLCHETES> )?
+    { Semantico.E_Generate(); }
+  |
+    (t=<CONSTANTE_INTEIRA> { Semantico.C1(Integer.parseInt(t.image)); })
+  |
+    (t=<CONSTANTE_REAL> { Semantico.C2(Double.parseDouble(t.image)); })
+  |
+    (t=<CONSTANTE_LITERAL> { Semantico.C3(t.image); })
+  |
+    <TRUE> { Semantico.C4(); }
+  |
+    <FALSE> { Semantico.C5(); }
+  |
+    <ABRE_PARENTESES> expressao() <FECHA_PARENTESES>
+  |
+    <NAO> <ABRE_PARENTESES> expressao() <FECHA_PARENTESES> { Semantico.NOT(); }
+
+}
+
+// RECUPERAÇÃO DE ERROS
 
 void skipUntil(int[] syncTokens) :
 { Token t; }
@@ -388,5 +479,3 @@ void skipUntil(int[] syncTokens) :
     }
   }
 }
-
-

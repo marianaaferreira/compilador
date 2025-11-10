@@ -6,6 +6,8 @@ import org.example.ParseException;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.StringReader;
+import java.util.ArrayList;
+import java.util.List;
 
 public class Main {
 
@@ -36,7 +38,9 @@ public class Main {
             janela.exibirMensagem("Nenhum código para analisar.", true);
             return;
         }
-
+        Semantico.codigo.clear();
+        Semantico.tabelaSimbolos.clear();
+        Semantico.estado = new EstadoSemantico();
         Linguagem20252.clearParseErrors();
         Linguagem20252 parser = new Linguagem20252(new StringReader(codigo));
 
@@ -92,8 +96,22 @@ public class Main {
                 }
                 janela.exibirMensagem(sb.toString(), true);
             } else {
-                janela.exibirMensagem("Análise concluída sem erros.", false);
+            janela.exibirMensagem("Análise concluída sem erros.", false);
+
+            // ETAPA 3: Analise semantica e codigo intermediario
+            List<String[]> linhasTabela = new ArrayList<>();
+
+            for (Instrucao instrucao : Semantico.codigo) {
+                linhasTabela.add(new String[]{
+                        String.valueOf(instrucao.getPonteiro()),
+                        instrucao.getInstrucao(),
+                        String.valueOf(instrucao.getParametro())
+                });
             }
+
+            JanelaCodigoObjeto janelaCodigo = new JanelaCodigoObjeto(linhasTabela);
+            janelaCodigo.setVisible(true);
+        }
 
         } catch (ParseException e) {
             parser.reportParseError(e);
