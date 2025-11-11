@@ -260,7 +260,7 @@ void decl_do_vetor() : { Token c; } {
    <ABRE_COLCHETES> c=<CONSTANTE_INTEIRA> { Semantico.V1(Integer.parseInt(c.image)); } <FECHA_COLCHETES>
       inic_vetor() { Semantico.V2(); }
 
-  | inic_escalar() { /* Semantico.E2() deve ser chamada dentro de inic_escalar quando apropriado */ }
+  | inic_escalar() { Semantico.E2(); }
 
 }
 

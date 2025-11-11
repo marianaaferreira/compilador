@@ -219,7 +219,7 @@ Semantico.V2();
     default:
       jj_la1[5] = jj_gen;
       inic_escalar();
-
+Semantico.E2();
     }
 }
 

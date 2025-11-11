@@ -51,8 +51,12 @@ public class Semantico {
             erro("Identificador já declarado: " + id);
         } else {
             estado.listaDeIdentificadoresDaLinha.add(id);
+                int base = estado.VT + 1; // base (endereço lógico)
+                Simbolo s = new Simbolo(id, estado.categoriaAtual, base, estado.tamanhoDoUltimoVetor);
+                tabelaSimbolos.put(id, s);
+            }
+
         }
-    }
 
     // #T — define categoria atual (usa int conforme .jj: 1=num,2=real,3=text,4=flag)
     public static void T(int categoria) {
