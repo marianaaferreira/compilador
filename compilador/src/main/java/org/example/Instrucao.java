@@ -1,11 +1,18 @@
 package org.example;
 
 public class Instrucao {
+
     private int ponteiro;
     private String instrucao;
-    private int parametro;
+    private Object parametro;
 
-    public Instrucao(int ponteiro, String instrucao, int parametro) {
+    public Instrucao(int ponteiro, String instrucao) {
+        this.ponteiro = ponteiro;
+        this.instrucao = instrucao;
+        this.parametro = null;
+    }
+
+    public Instrucao(int ponteiro, String instrucao, Object parametro) {
         this.ponteiro = ponteiro;
         this.instrucao = instrucao;
         this.parametro = parametro;
@@ -19,12 +26,12 @@ public class Instrucao {
         return ponteiro;
     }
 
-    public int getParametro() {
+    public Object getParametro() {
         return parametro;
     }
 
-    public void setOperando(int novoOperando) {
-        this.parametro = novoOperando;
+    public void setParametro(Object novoParametro) {
+        this.parametro = novoParametro;
     }
 
     public void setInstrucao(String instrucao) {
@@ -35,7 +42,11 @@ public class Instrucao {
         this.ponteiro = ponteiro;
     }
 
+    @Override
     public String toString() {
-        return String.format("%03d: %s %d", ponteiro, instrucao, parametro);
+        return String.format("%03d: %s %s",
+                ponteiro,
+                instrucao,
+                parametro == null ? "" : parametro.toString());
     }
 }

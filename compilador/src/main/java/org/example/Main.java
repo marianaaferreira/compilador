@@ -111,6 +111,25 @@ public class Main {
 
             JanelaCodigoObjeto janelaCodigo = new JanelaCodigoObjeto(linhasTabela);
             janelaCodigo.setVisible(true);
+
+                // ETAPA 4: Execução na Máquina Virtual
+                try {
+                    MaquinaVirtual vm = new MaquinaVirtual(1000);
+                    vm.carregarPrograma(Semantico.codigo);
+
+                    janela.exibirMensagem(
+                            "Análise concluída sem erros.\n" +
+                                    "Iniciando execução da Máquina Virtual...\n",
+                            false
+                    );
+
+                    vm.run();
+
+                    janela.exibirMensagem(vm.getSaida(), false);
+
+                } catch (Exception ex) {
+                    janela.exibirMensagem("Erro durante execução da Máquina Virtual: " + ex.getMessage(), true);
+                }
         }
 
         } catch (ParseException e) {

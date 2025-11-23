@@ -16,8 +16,8 @@ public class EstadoSemantico {
     public int tamanhoDoUltimoVetor = -1;
     public boolean houveInitLinha = false;
     public int primeiroBaseInit = -1;
+    public Stack<String> pilhaTipos = new Stack<>();
 
-    // Reinicia variáveis de linha
     public void resetLinha() {
         VP = 0;
         listaDeIdentificadoresDaLinha.clear();

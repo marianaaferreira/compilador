@@ -8,21 +8,12 @@ public class Semantico {
     public static List<Instrucao> codigo = new ArrayList<>();
     public static EstadoSemantico estado = new EstadoSemantico();
 
-    private static Map<Integer, String> poolStrings = new LinkedHashMap<>();
-    private static Map<Integer, Double> poolReais = new LinkedHashMap<>();
-    private static int nextStringId = 1;
-    private static int nextRealId = 1;
-
     private static Simbolo ultimoSimbolo = null;
 
     private static int indiceCorrenteValoresVetor = -1;
 
-    private static void gerarInstrucao(String instrucao, int parametro) {
+    private static void gerarInstrucao(String instrucao, Object parametro) {
         codigo.add(new Instrucao(estado.ponteiro++, instrucao, parametro));
-    }
-
-    private static void gerarInstrucao(String instrucao) {
-        gerarInstrucao(instrucao, 0);
     }
 
     // #P1 — Inserir programa na TS
@@ -45,20 +36,19 @@ public class Semantico {
         estado.resetLinha();
     }
 
-    // #D1 — adicionar identificador na lista de linha (sem inserir na TS ainda)
+    // #D1 — adicionar identificador na lista de linha
     public static void D1(String id) {
         if (tabelaSimbolos.containsKey(id)) {
             erro("Identificador já declarado: " + id);
         } else {
             estado.listaDeIdentificadoresDaLinha.add(id);
-                int base = estado.VT + 1; // base (endereço lógico)
-                Simbolo s = new Simbolo(id, estado.categoriaAtual, base, estado.tamanhoDoUltimoVetor);
-                tabelaSimbolos.put(id, s);
-            }
-
+            //int base = estado.VT + 1; // base (endereço lógico)
+            //Simbolo s = new Simbolo(id, estado.categoriaAtual, base, estado.tamanhoDoUltimoVetor);
+            //tabelaSimbolos.put(id, s);
         }
+    }
 
-    // #T — define categoria atual (usa int conforme .jj: 1=num,2=real,3=text,4=flag)
+    // #T — define categoria atual
     public static void T(int categoria) {
         estado.categoriaAtual = categoria;
     }
@@ -122,7 +112,7 @@ public class Semantico {
 
     public static void IV_End() {
         if (estado.baseDoUltimoVetor < 0) {
-            erro("IV_End: base do último vetor inválida");
+            erro("Base do último vetor inválida");
             return;
         }
 
@@ -164,27 +154,23 @@ public class Semantico {
 
     // #C1..#C5 — constantes
     public static void C1(int k) {
-        gerarInstrucao("LDI", k);
+        gerarInstrucao("LDI", Integer.valueOf(k));
     }
 
     public static void C2(double r) {
-        int id = nextRealId++;
-        poolReais.put(id, r);
-        gerarInstrucao("LDR", id);
+        gerarInstrucao("LDR", Double.valueOf(r));
     }
 
     public static void C3(String s) {
-        int id = nextStringId++;
-        poolStrings.put(id, s);
-        gerarInstrucao("LDS", id);
+        gerarInstrucao("LDS", s);
     }
 
     public static void C4() {
-        gerarInstrucao("LDB", 1);
+        gerarInstrucao("LDB", Integer.valueOf(1));
     }
 
     public static void C5() {
-        gerarInstrucao("LDB", 0);
+        gerarInstrucao("LDB", Integer.valueOf(0));
     }
 
     // #A1 — buscar identificador (set identificador ...)
@@ -221,7 +207,7 @@ public class Semantico {
             gerarInstrucao("STR", ultimoSimbolo.getBase());
         } else {
             // vetor com índice: LDI base-1 ; ADD 0 ; STX 0
-            gerarInstrucao("LDI", ultimoSimbolo.getBase() - 1);
+            gerarInstrucao("LDI", Integer.valueOf(ultimoSimbolo.getBase() - 1));
             gerarInstrucao("ADD", 0);
             gerarInstrucao("STX", 0);
         }
@@ -249,12 +235,12 @@ public class Semantico {
         int cat = ultimoSimbolo.getCategoria();
         if (ultimoSimbolo.getTamanho() == -1) {
             // escalar
-            gerarInstrucao("REA", cat);
+            gerarInstrucao("REA", Integer.valueOf(cat));
             gerarInstrucao("STR", ultimoSimbolo.getBase());
         } else {
             // vetor (índice foi gerado antes)
-            gerarInstrucao("REA", cat);
-            gerarInstrucao("LDI", ultimoSimbolo.getBase() - 1);
+            gerarInstrucao("REA", Integer.valueOf(cat));
+            gerarInstrucao("LDI", Integer.valueOf(ultimoSimbolo.getBase() - 1));
             gerarInstrucao("ADD", 0);
             gerarInstrucao("STX", 0);
         }
@@ -284,8 +270,7 @@ public class Semantico {
             gerarInstrucao("LDV", ultimoSimbolo.getBase());
             gerarInstrucao("WRT", 0);
         } else {
-            // vetor: índice já gerado
-            gerarInstrucao("LDI", ultimoSimbolo.getBase() - 1);
+            gerarInstrucao("LDI", Integer.valueOf(ultimoSimbolo.getBase() - 1));
             gerarInstrucao("ADD", 0);
             gerarInstrucao("LDX", 0);
             gerarInstrucao("WRT", 0);
@@ -296,30 +281,25 @@ public class Semantico {
     // Literais na saída
     // #K1: inteiro literal
     public static void K1(int k) {
-        gerarInstrucao("LDI", k);
+        gerarInstrucao("LDI", Integer.valueOf(k));
         gerarInstrucao("WRT", 0);
     }
 
     // #K2: real literal
     public static void K2(double r) {
-        int id = nextRealId++;
-        poolReais.put(id, r);
-        gerarInstrucao("LDR", id);
+        gerarInstrucao("LDR", Double.valueOf(r));
         gerarInstrucao("WRT", 0);
     }
 
     // #K3: literal string
     public static void K3(String s) {
-        int id = nextStringId++;
-        poolStrings.put(id, s);
-        gerarInstrucao("LDS", id);
+        gerarInstrucao("LDS", s);
         gerarInstrucao("WRT", 0);
     }
 
     // #F1 — after condition: gerar JMF e empilhar endereço
     public static void F1() {
         gerarInstrucao("JMF", 0);
-        // empilha o índice da instrução a ajustar (ponteiro-1)
         estado.pilhaDeDesvios.push(estado.ponteiro - 1);
     }
 
@@ -327,9 +307,7 @@ public class Semantico {
     public static void F2() {
         gerarInstrucao("JMP", 0);
         int jmfPos = estado.pilhaDeDesvios.pop();
-        // ajustar JMF empilhada para saltar ao índice atual
-        codigo.get(jmfPos - 1).setOperando(estado.ponteiro); // instrucao.ponteiro starts at 1; list index = ponteiro-1
-        // empilha o novo JMP para ajuste posterior
+        codigo.get(jmfPos - 1).setParametro(Integer.valueOf(estado.ponteiro));
         estado.pilhaDeDesvios.push(estado.ponteiro - 1);
     }
 
@@ -337,9 +315,8 @@ public class Semantico {
     public static void F3() {
         if (estado.pilhaDeDesvios.isEmpty()) return;
         int pos = estado.pilhaDeDesvios.pop();
-        // lista codigo index = pos-1
         if (pos - 1 >= 0 && pos - 1 < codigo.size()) {
-            codigo.get(pos - 1).setOperando(estado.ponteiro);
+            codigo.get(pos - 1).setParametro(Integer.valueOf(estado.ponteiro));
         } else {
             erro("F3: posição de desvio inválida ao ajustar: " + pos);
         }
@@ -348,24 +325,21 @@ public class Semantico {
     // #L1 — inicio do loop: guardar inicio e gerar JMF empilhando
     public static void L1() {
         int inicioLoop = estado.ponteiro;
-        // empilhar inicio (usamos pilhaDeDesvios para guardar inicio e JMF pos)
         gerarInstrucao("JMF", 0);
-        estado.pilhaDeDesvios.push(estado.ponteiro - 1); // posição do JMF para ajuste de saída
-        // também empilhar inicio em pilha (colocamos num campo temporário usando baseDoUltimoVetor)
-        // vamos usar baseDoUltimoVetor como storage temporário (não ideal, mas evita novas estruturas)
+        estado.pilhaDeDesvios.push(estado.ponteiro - 1);
         estado.baseDoUltimoVetor = inicioLoop;
     }
 
     // #L2 — fechar loop: gerar JMP para inicio e ajustar JMF pendente
     public static void L2() {
         int inicioLoop = estado.baseDoUltimoVetor;
-        gerarInstrucao("JMP", inicioLoop);
+        gerarInstrucao("JMP", Integer.valueOf(inicioLoop));
         if (estado.pilhaDeDesvios.isEmpty()) {
             erro("L2: sem JMF pendente para ajustar");
             return;
         }
         int jmfPos = estado.pilhaDeDesvios.pop();
-        codigo.get(jmfPos - 1).setOperando(estado.ponteiro);
+        codigo.get(jmfPos - 1).setParametro(Integer.valueOf(estado.ponteiro));
     }
 
     public static void REQ() { gerarInstrucao("EQL", 0); }
@@ -409,10 +383,10 @@ public class Semantico {
         if (ultimoSimbolo == null) return;
         if (ultimoSimbolo.getTamanho() == -1) {
             // escalar: LDV base
-            gerarInstrucao("LDV", ultimoSimbolo.getBase());
+            gerarInstrucao("LDV", Integer.valueOf(ultimoSimbolo.getBase()));
         } else {
             // vetor: índice já gerado no topo => LDI base-1 ; ADD 0 ; LDX 0
-            gerarInstrucao("LDI", ultimoSimbolo.getBase() - 1);
+            gerarInstrucao("LDI", Integer.valueOf(ultimoSimbolo.getBase() - 1));
             gerarInstrucao("ADD", 0);
             gerarInstrucao("LDX", 0);
         }
@@ -420,29 +394,20 @@ public class Semantico {
     }
 
     public static void erro(String msg) {
-        System.err.println("[ERRO SEMÂNTICO] " + msg);
+        System.err.println("ERRO SEMÂNTICO: " + msg);
     }
 
     public static void mostraTS() {
-        System.out.println("=== TABELA DE SIMBOLOS ===");
+        System.out.println("TABELA DE SIMBOLOS: ");
         for (Simbolo s : tabelaSimbolos.values()) {
             System.out.println(s);
         }
     }
 
     public static void mostraCodigo() {
-        System.out.println("=== CODIGO GERADO ===");
+        System.out.println("CODIGO GERADO: ");
         for (Instrucao i : codigo) {
             System.out.println(i);
-        }
-        System.out.println("--- POOLS ---");
-        System.out.println("Strings (id -> literal):");
-        for (Map.Entry<Integer, String> e : poolStrings.entrySet()) {
-            System.out.printf(" %d -> %s%n", e.getKey(), e.getValue());
-        }
-        System.out.println("Reais (id -> valor):");
-        for (Map.Entry<Integer, Double> e : poolReais.entrySet()) {
-            System.out.printf(" %d -> %s%n", e.getKey(), e.getValue());
         }
     }
 }
