@@ -29,6 +29,16 @@ public class Semantico {
         return estado.pilhaTipos.pop();
     }
 
+    public static String nomeTipo(int tipo) {
+        return switch (tipo) {
+            case 1 -> "num";
+            case 2 -> "real";
+            case 3 -> "literal";
+            case 4 -> "logico";
+            default -> "desconhecido";
+        };
+    }
+
     public static void verificaAtribuicao() {
         int tipoExpr = popTipo();
         int tipoVar = ultimoSimbolo.getCategoria();
@@ -42,7 +52,12 @@ public class Semantico {
         };
 
         if (!ok) {
-            erro("Tipo incompatível na atribuição: variável " + tipoVar + " ← expressão " + tipoExpr);
+            erro(
+                    "Tipo incompatível na atribuição: esperado "
+                            + nomeTipo(tipoVar)
+                            + " mas a expressão é do tipo "
+                            + nomeTipo(tipoExpr)
+            );
         }
     }
 
@@ -51,7 +66,7 @@ public class Semantico {
         int t1 = popTipo();
 
         if ((t1 != 1 && t1 != 2) || (t2 != 1 && t2 != 2)) {
-            erro("Operador aritmético '" + op + "' usado com tipos inválidos.");
+            erro("Operador aritmético usado com tipos inválidos.");
         }
 
         if (t1 == 1 && t2 == 1 && !op.equals("DIV")) {
@@ -66,7 +81,7 @@ public class Semantico {
         int t1 = popTipo();
 
         if (!((t1 == 1 || t1 == 2) && (t2 == 1 || t2 == 2))) {
-            erro("Operador relacional '" + op + "' usado com tipos incompatíveis.");
+            erro("Operador relacional usado com tipos incompatíveis.");
         }
 
         pushTipo(4);
@@ -77,7 +92,7 @@ public class Semantico {
         int t1 = popTipo();
 
         if (t1 != 4 || t2 != 4) {
-            erro("Operador lógico '" + op + "' usado com tipos não-lógicos.");
+            erro("Operador lógico usado com tipos não-lógicos.");
         }
 
         pushTipo(4);
@@ -86,7 +101,7 @@ public class Semantico {
     public static void verificaIndice() {
         int t = popTipo();
         if (t != 1) {
-            erro("Índice de vetor deve ser inteiro. Encontrado tipo " + t);
+            erro("Índice de vetor deve ser inteiro.");
         }
     }
 
