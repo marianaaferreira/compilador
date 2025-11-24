@@ -257,11 +257,14 @@ void tipo() : {} {
 }
 
 void decl_do_vetor() : { Token c; } {
-   <ABRE_COLCHETES> c=<CONSTANTE_INTEIRA> { Semantico.V1(Integer.parseInt(c.image)); } <FECHA_COLCHETES>
-      inic_vetor() { Semantico.V2(); }
+   <ABRE_COLCHETES> c=<CONSTANTE_INTEIRA>
+       { Semantico.V1(Integer.parseInt(c.image)); }
+       <FECHA_COLCHETES>
+       inic_vetor()
+       { Semantico.V2(); }
 
-  | inic_escalar() { Semantico.E2(); }
-
+ | inic_escalar()
+       { Semantico.E2(); Semantico.IE(); }
 }
 
 void inic_vetor() : {} {
@@ -269,7 +272,7 @@ void inic_vetor() : {} {
 }
 
 void inic_escalar() : {} {
-  ( <ATRIBUICAO> valor() { Semantico.IE(); } )?
+  ( <ATRIBUICAO> valor())?
 }
 
 void lista_valores_vetor() : {} {
@@ -444,6 +447,8 @@ void elemento() : { Token id; Token t; } {
     id=<IDENTIFICADOR> { Semantico.E1(id.image); }
     ( <ABRE_COLCHETES> expressao() { Semantico.E2_Indice(); } <FECHA_COLCHETES> )?
     { Semantico.E_Generate(); }
+    /*id=<IDENTIFICADOR> { Semantico.E1(id.image); }
+        ( <ABRE_COLCHETES> expressao() <FECHA_COLCHETES> )?*/
   |
     (t=<CONSTANTE_INTEIRA> { Semantico.C1(Integer.parseInt(t.image)); })
   |

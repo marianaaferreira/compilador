@@ -20,8 +20,9 @@ public class MaquinaVirtual {
         this.saida.setLength(0);
     }
 
-    public void carregarPrograma(List<Instrucao> codigo) {
-        this.codigo = codigo;
+    public void carregarPrograma(List<Instrucao> codigoRecebido) {
+        codigoRecebido.add(0, null);
+        this.codigo = codigoRecebido;
         this.pc = 1;
         this.topo = 0;
         this.halted = false;
@@ -36,13 +37,13 @@ public class MaquinaVirtual {
 
     private double toNumber(Object o) {
         if (o instanceof Number n) return n.doubleValue();
-        throw new RuntimeException("Valor não numérico na pilha: " + o);
+        throw new RuntimeException("Valor não numérico: " + o);
     }
 
     private boolean toBool(Object o) {
         if (o instanceof Boolean b) return b;
         if (o instanceof Number n) return n.doubleValue() != 0;
-        throw new RuntimeException("Valor não booleano na pilha: " + o);
+        throw new RuntimeException("Valor não booleano: " + o);
     }
 
     private void executar(Instrucao inst) {
@@ -211,6 +212,22 @@ public class MaquinaVirtual {
 
             case "WRT":
                 saida.append(String.valueOf(pilha[topo - 1]));
+                topo--;
+                pc++;
+                break;
+
+            case "LDX":
+                int enderecoLDX = ((Number) pilha[topo - 1]).intValue();
+                pilha[topo - 1] = pilha[enderecoLDX];
+
+                pc++;
+                break;
+
+            case "STX":
+                int enderecoSTX = ((Number) pilha[topo - 1]).intValue();
+                topo--;
+                Object valorSTX = pilha[topo - 1];
+                pilha[enderecoSTX] = valorSTX;
                 topo--;
                 pc++;
                 break;

@@ -15,19 +15,8 @@ public class Main {
         Janela janela = new Janela();
         janela.setVisible(true);
 
-        janela.addActionListenerCompilar(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                analisarSintatico(janela);
-            }
-        });
-
-        janela.addActionListenerCompilarMenu(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                analisarSintatico(janela);
-            }
-        });
+        janela.addActionListenerCompilar(e -> analisarSintatico(janela));
+        janela.addActionListenerCompilarMenu(e -> analisarSintatico(janela));
     }
 
     public static void analisarSintatico(Janela janela) {
@@ -38,14 +27,18 @@ public class Main {
             janela.exibirMensagem("Nenhum código para analisar.", true);
             return;
         }
+
         Semantico.codigo.clear();
         Semantico.tabelaSimbolos.clear();
+        Semantico.errosSemanticos.clear();
         Semantico.estado = new EstadoSemantico();
         Linguagem20252.clearParseErrors();
+        Linguagem20252.lexicalErrors.clear();
+
         Linguagem20252 parser = new Linguagem20252(new StringReader(codigo));
 
         try {
-            // ETAPA 1: Análise Léxica
+            // ETAPA 1 — ANÁLISE LÉXICA
             Token t;
             while (true) {
                 t = parser.getNextToken();
@@ -53,54 +46,70 @@ public class Main {
 
                 switch (t.kind) {
                     case Linguagem20252Constants.SIMBOLO_INVALIDO:
-                        Linguagem20252.lexicalErrors.add("Erro léxico na linha " + t.beginLine + ", coluna " + t.beginColumn + ": símbolo inválido '" + t.image + "'");
+                        Linguagem20252.lexicalErrors.add(
+                                "Erro léxico na linha " + t.beginLine + ", coluna " + t.beginColumn +
+                                        ": símbolo inválido '" + t.image + "'"
+                        );
                         break;
                     case Linguagem20252Constants.LITERAL_NAO_FECHADO:
-                        Linguagem20252.lexicalErrors.add("Erro léxico na linha " + t.beginLine + ", coluna " + t.beginColumn + ": constante literal não finalizada");
+                        Linguagem20252.lexicalErrors.add(
+                                "Erro léxico na linha " + t.beginLine + ": literal não finalizada"
+                        );
                         break;
                     case Linguagem20252Constants.COMENTARIO_NAO_FECHADO:
-                        Linguagem20252.lexicalErrors.add("Erro léxico na linha " + t.beginLine + ", coluna " + t.beginColumn + ": comentário não finalizado");
+                        Linguagem20252.lexicalErrors.add(
+                                "Erro léxico na linha " + t.beginLine + ": comentário não finalizado"
+                        );
                         break;
                     case Linguagem20252Constants.CONST_INT_INVALIDA:
-                        Linguagem20252.lexicalErrors.add("Erro léxico na linha " + t.beginLine + ", coluna " + t.beginColumn + ": constante inteira inválida");
+                        Linguagem20252.lexicalErrors.add(
+                                "Erro léxico na linha " + t.beginLine + ": constante inteira inválida"
+                        );
                         break;
                     case Linguagem20252Constants.CONST_REAL_INVALIDA:
-                        Linguagem20252.lexicalErrors.add("Erro léxico na linha " + t.beginLine + ", coluna " + t.beginColumn + ": constante real inválida");
+                        Linguagem20252.lexicalErrors.add(
+                                "Erro léxico na linha " + t.beginLine + ": constante real inválida"
+                        );
                         break;
                     case Linguagem20252Constants.IDENTIFICADOR_INVALIDO:
-                        Linguagem20252.lexicalErrors.add("Erro léxico na linha " + t.beginLine + ", coluna " + t.beginColumn + ": identificador inválido '" + t.image + "'");
-                        break;
-                    default:
+                        Linguagem20252.lexicalErrors.add(
+                                "Erro léxico na linha " + t.beginLine +
+                                        ": identificador inválido '" + t.image + "'"
+                        );
                         break;
                 }
             }
 
-            // Se houver erros léxicos, exibe e para
             if (!Linguagem20252.lexicalErrors.isEmpty()) {
                 StringBuilder sb = new StringBuilder("Foram encontrados erros léxicos:\n");
-                for (String msg : Linguagem20252.lexicalErrors) {
-                    sb.append("• ").append(msg).append("\n");
-                }
+                Linguagem20252.lexicalErrors.forEach(msg -> sb.append("• ").append(msg).append("\n"));
                 janela.exibirMensagem(sb.toString(), true);
                 return;
             }
 
-            // ETAPA 2: Análise Sintática
+            // ETAPA 2 — ANÁLISE SINTÁTICA
             parser.ReInit(new StringReader(codigo));
             parser.programa();
 
             if (!Linguagem20252.parseErrors.isEmpty()) {
                 StringBuilder sb = new StringBuilder("Foram encontrados erros sintáticos:\n");
-                for (String msg : Linguagem20252.parseErrors) {
-                    sb.append("• ").append(msg).append("\n");
-                }
+                Linguagem20252.parseErrors.forEach(msg -> sb.append("• ").append(msg).append("\n"));
                 janela.exibirMensagem(sb.toString(), true);
-            } else {
+                return;
+            }
+
+            // ETAPA 3 — ANÁLISE SEMÂNTICA
+            if (!Semantico.errosSemanticos.isEmpty()) {
+                StringBuilder sb = new StringBuilder("Foram encontrados erros semânticos:\n");
+                Semantico.errosSemanticos.forEach(msg -> sb.append("• ").append(msg).append("\n"));
+                janela.exibirMensagem(sb.toString(), true);
+                return;
+            }
+
             janela.exibirMensagem("Análise concluída sem erros.", false);
 
-            // ETAPA 3: Analise semantica e codigo intermediario
+            // ETAPA 4 — EXIBIR CÓDIGO OBJETO
             List<String[]> linhasTabela = new ArrayList<>();
-
             for (Instrucao instrucao : Semantico.codigo) {
                 linhasTabela.add(new String[]{
                         String.valueOf(instrucao.getPonteiro()),
@@ -112,32 +121,20 @@ public class Main {
             JanelaCodigoObjeto janelaCodigo = new JanelaCodigoObjeto(linhasTabela);
             janelaCodigo.setVisible(true);
 
-                // ETAPA 4: Execução na Máquina Virtual
-                try {
-                    MaquinaVirtual vm = new MaquinaVirtual(1000);
-                    vm.carregarPrograma(Semantico.codigo);
-
-                    janela.exibirMensagem(
-                            "Análise concluída sem erros.\n" +
-                                    "Iniciando execução da Máquina Virtual...\n",
-                            false
-                    );
-
-                    vm.run();
-
-                    janela.exibirMensagem(vm.getSaida(), false);
-
-                } catch (Exception ex) {
-                    janela.exibirMensagem("Erro durante execução da Máquina Virtual: " + ex.getMessage(), true);
-                }
-        }
+            // ETAPA 5 — EXECUÇÃO NA VM
+            try {
+                MaquinaVirtual vm = new MaquinaVirtual(1000);
+                vm.carregarPrograma(Semantico.codigo);
+                vm.run();
+                janela.exibirMensagem(vm.getSaida(), false);
+            } catch (Exception ex) {
+                janela.exibirMensagem("Erro durante execução: " + ex.getMessage(), true);
+            }
 
         } catch (ParseException e) {
             parser.reportParseError(e);
             StringBuilder sb = new StringBuilder("Foram encontrados erros sintáticos:\n");
-            for (String msg : Linguagem20252.parseErrors) {
-                sb.append("• ").append(msg).append("\n");
-            }
+            Linguagem20252.parseErrors.forEach(msg -> sb.append("• ").append(msg).append("\n"));
             janela.exibirMensagem(sb.toString(), true);
 
         } catch (Exception e) {

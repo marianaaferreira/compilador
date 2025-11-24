@@ -219,7 +219,7 @@ Semantico.V2();
     default:
       jj_la1[5] = jj_gen;
       inic_escalar();
-Semantico.E2();
+Semantico.E2(); Semantico.IE();
     }
 }
 
@@ -244,7 +244,6 @@ Semantico.IV_End();
     case ATRIBUICAO:{
       jj_consume_token(ATRIBUICAO);
       valor();
-Semantico.IE();
       break;
       }
     default:

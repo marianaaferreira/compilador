@@ -11,10 +11,93 @@ public class Semantico {
     private static Simbolo ultimoSimbolo = null;
 
     private static int indiceCorrenteValoresVetor = -1;
+    public static List<String> errosSemanticos = new ArrayList<>();
 
     private static void gerarInstrucao(String instrucao, Object parametro) {
         codigo.add(new Instrucao(estado.ponteiro++, instrucao, parametro));
     }
+
+    private static void pushTipo(int tipo) {
+        estado.pilhaTipos.push(tipo);
+    }
+
+    private static int popTipo() {
+        if (estado.pilhaTipos.isEmpty()) {
+            erro("Pilha de tipos vazia");
+            return -1;
+        }
+        return estado.pilhaTipos.pop();
+    }
+
+    public static void verificaAtribuicao() {
+        int tipoExpr = popTipo();
+        int tipoVar = ultimoSimbolo.getCategoria();
+
+        boolean ok = switch (tipoVar) {
+            case 1 -> tipoExpr == 1;
+            case 2 -> (tipoExpr == 1 || tipoExpr == 2);
+            case 3 -> tipoExpr == 3;
+            case 4 -> tipoExpr == 4;
+            default -> false;
+        };
+
+        if (!ok) {
+            erro("Tipo incompatível na atribuição: variável " + tipoVar + " ← expressão " + tipoExpr);
+        }
+    }
+
+    public static void verificaAritmetico(String op) {
+        int t2 = popTipo();
+        int t1 = popTipo();
+
+        if ((t1 != 1 && t1 != 2) || (t2 != 1 && t2 != 2)) {
+            erro("Operador aritmético '" + op + "' usado com tipos inválidos.");
+        }
+
+        if (t1 == 1 && t2 == 1 && !op.equals("DIV")) {
+            pushTipo(1);
+        } else {
+            pushTipo(2);
+        }
+    }
+
+    public static void verificaRelacional(String op) {
+        int t2 = popTipo();
+        int t1 = popTipo();
+
+        if (!((t1 == 1 || t1 == 2) && (t2 == 1 || t2 == 2))) {
+            erro("Operador relacional '" + op + "' usado com tipos incompatíveis.");
+        }
+
+        pushTipo(4);
+    }
+
+    public static void verificaLogico(String op) {
+        int t2 = popTipo();
+        int t1 = popTipo();
+
+        if (t1 != 4 || t2 != 4) {
+            erro("Operador lógico '" + op + "' usado com tipos não-lógicos.");
+        }
+
+        pushTipo(4);
+    }
+
+    public static void verificaIndice() {
+        int t = popTipo();
+        if (t != 1) {
+            erro("Índice de vetor deve ser inteiro. Encontrado tipo " + t);
+        }
+    }
+
+    public static void verificaNot() {
+        int t = popTipo();
+        if (t != 4) {
+            erro("Operador NOT usado com tipo não-lógico.");
+        }
+        pushTipo(4);
+    }
+
 
     // #P1 — Inserir programa na TS
     public static void P1(String identificador) {
@@ -147,6 +230,11 @@ public class Semantico {
             erro("lista de bases vazia");
             return;
         }
+        String id = estado.listaDeIdentificadoresDaLinha.get(0);
+        ultimoSimbolo = tabelaSimbolos.get(id);
+
+        verificaAtribuicao();
+
         estado.primeiroBaseInit = estado.listaBasesDaLinha.get(0);
         gerarInstrucao("STR", estado.primeiroBaseInit);
         estado.houveInitLinha = true;
@@ -155,22 +243,27 @@ public class Semantico {
     // #C1..#C5 — constantes
     public static void C1(int k) {
         gerarInstrucao("LDI", Integer.valueOf(k));
+        pushTipo(1);
     }
 
     public static void C2(double r) {
         gerarInstrucao("LDR", Double.valueOf(r));
+        pushTipo(2);
     }
 
     public static void C3(String s) {
         gerarInstrucao("LDS", s);
+        pushTipo(3);
     }
 
     public static void C4() {
         gerarInstrucao("LDB", Integer.valueOf(1));
+        pushTipo(4);
     }
 
     public static void C5() {
         gerarInstrucao("LDB", Integer.valueOf(0));
+        pushTipo(4);
     }
 
     // #A1 — buscar identificador (set identificador ...)
@@ -191,6 +284,7 @@ public class Semantico {
 
     // #A2 — validar se tem índice/escalar
     public static void A2() {
+        verificaIndice();
         if (ultimoSimbolo == null) return;
         if (ultimoSimbolo.getTamanho() == -1 && estado.temIndice) {
             erro("A2: Índice fornecido para escalar '" + ultimoSimbolo.getIdentificador() + "'");
@@ -201,6 +295,7 @@ public class Semantico {
 
     // #A3 — geração do armazenamento (STR ou STX sequence)
     public static void A3() {
+        verificaAtribuicao();
         if (ultimoSimbolo == null) return;
         if (ultimoSimbolo.getTamanho() == -1) {
             // escalar: STR base
@@ -342,30 +437,30 @@ public class Semantico {
         codigo.get(jmfPos - 1).setParametro(Integer.valueOf(estado.ponteiro));
     }
 
-    public static void REQ() { gerarInstrucao("EQL", 0); }
-    public static void RNEQ() { gerarInstrucao("DIF", 0); }
-    public static void RLT() { gerarInstrucao("SMR", 0); }
-    public static void RGT() { gerarInstrucao("BGR", 0); }
-    public static void RLE() { gerarInstrucao("SME", 0); }
-    public static void RGE() { gerarInstrucao("BGE", 0); }
+    public static void REQ() {verificaRelacional("REQ"); gerarInstrucao("EQL", 0); }
+    public static void RNEQ() {verificaRelacional("RNEQ"); gerarInstrucao("DIF", 0); }
+    public static void RLT() {verificaRelacional("RLT"); gerarInstrucao("SMR", 0); }
+    public static void RGT() {verificaRelacional("RGT"); gerarInstrucao("BGR", 0); }
+    public static void RLE() {verificaRelacional("RLE"); gerarInstrucao("SME", 0); }
+    public static void RGE() {verificaRelacional("RGE"); gerarInstrucao("BGE", 0); }
 
-    public static void ADD() { gerarInstrucao("ADD", 0); }
-    public static void SUB() { gerarInstrucao("SUB", 0); }
-    public static void OR()  { gerarInstrucao("OR", 0); }
+    public static void ADD() {verificaAritmetico("ADD"); gerarInstrucao("ADD", 0); }
+    public static void SUB() {verificaAritmetico("SUB"); gerarInstrucao("SUB", 0); }
+    public static void OR()  {verificaLogico("OR"); gerarInstrucao("OR", 0); }
 
-    public static void MUL() { gerarInstrucao("MUL", 0); }
-    public static void DIV() { gerarInstrucao("DIV", 0); }
-    public static void MOD() { gerarInstrucao("MOD", 0); }
-    public static void REM() { gerarInstrucao("REM", 0); }
-    public static void AND() { gerarInstrucao("AND", 0); }
+    public static void MUL() {verificaAritmetico("MUL"); gerarInstrucao("MUL", 0); }
+    public static void DIV() {verificaAritmetico("DIV"); gerarInstrucao("DIV", 0); }
+    public static void MOD() {verificaAritmetico("MOD"); gerarInstrucao("MOD", 0); }
+    public static void REM() {verificaAritmetico("REM"); gerarInstrucao("REM", 0); }
+    public static void AND() {verificaLogico("AND"); gerarInstrucao("AND", 0); }
 
-    public static void POW() { gerarInstrucao("POW", 0); }
-    public static void NOT() { gerarInstrucao("NOT", 0); }
+    public static void POW() {verificaAritmetico("POW"); gerarInstrucao("POW", 0); }
+    public static void NOT() {verificaNot(); gerarInstrucao("NOT", 0); }
 
     // #E1 — buscar identificador em contexto de expressão
     public static void E1(String id) {
         if (!tabelaSimbolos.containsKey(id)) {
-            erro("E1: identificador não declarado: " + id);
+            erro("Identificador não declarado: " + id);
             ultimoSimbolo = null;
         } else {
             ultimoSimbolo = tabelaSimbolos.get(id);
@@ -391,10 +486,16 @@ public class Semantico {
             gerarInstrucao("LDX", 0);
         }
         estado.temIndice = false;
+        pushTipo(ultimoSimbolo.getCategoria());
+
     }
 
-    public static void erro(String msg) {
+    /*public static void erro(String msg) {
         System.err.println("ERRO SEMÂNTICO: " + msg);
+    }*/
+
+    public static void erro(String msg) {
+        errosSemanticos.add(msg);
     }
 
     public static void mostraTS() {

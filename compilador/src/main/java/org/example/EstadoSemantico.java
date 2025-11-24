@@ -3,7 +3,6 @@ package org.example;
 import java.util.*;
 
 public class EstadoSemantico {
-    public String contextoAtual = "";
     public int VT = 0; // total de posições já alocadas
     public int VP = 0; // soma das posições da linha atual
     public List<String> listaDeIdentificadoresDaLinha = new ArrayList<>();
@@ -16,7 +15,7 @@ public class EstadoSemantico {
     public int tamanhoDoUltimoVetor = -1;
     public boolean houveInitLinha = false;
     public int primeiroBaseInit = -1;
-    public Stack<String> pilhaTipos = new Stack<>();
+    public Stack<Integer> pilhaTipos = new Stack<>();
 
     public void resetLinha() {
         VP = 0;

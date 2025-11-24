@@ -6,12 +6,6 @@ public class Instrucao {
     private String instrucao;
     private Object parametro;
 
-    public Instrucao(int ponteiro, String instrucao) {
-        this.ponteiro = ponteiro;
-        this.instrucao = instrucao;
-        this.parametro = null;
-    }
-
     public Instrucao(int ponteiro, String instrucao, Object parametro) {
         this.ponteiro = ponteiro;
         this.instrucao = instrucao;
