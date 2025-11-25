@@ -1,10 +1,5 @@
 package org.example;
 
-import org.example.Linguagem20252;
-import org.example.ParseException;
-
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.List;
@@ -15,17 +10,45 @@ public class Main {
         Janela janela = new Janela();
         janela.setVisible(true);
 
-        janela.addActionListenerCompilar(e -> analisarSintatico(janela));
-        janela.addActionListenerCompilarMenu(e -> analisarSintatico(janela));
+        janela.addActionListenerCompilar(e -> compilarApenas(janela));
+        janela.addActionListenerCompilarMenu(e -> compilarApenas(janela));
+
+        janela.addActionListenerExecutar(e -> compilarEExecutar(janela));
+        janela.addActionListenerExecutarMenu(e -> compilarEExecutar(janela));
     }
 
-    public static void analisarSintatico(Janela janela) {
+    private static void compilarApenas(Janela janela) {
+        boolean ok = analisarSintatico(janela);
+        if (ok) {
+            List<String[]> linhasTabela = montarCodigoObjeto();
+            JanelaCodigoObjeto janelaCodigo = new JanelaCodigoObjeto(linhasTabela);
+            janelaCodigo.setVisible(true);
+        }
+    }
+
+
+    // COMPILAR E EXECUTAR (se compilação OK)
+    private static void compilarEExecutar(Janela janela) {
+        boolean ok = analisarSintatico(janela);
+        if (!ok) return;
+
+        try {
+            MaquinaVirtual vm = new MaquinaVirtual(1000);
+            vm.carregarPrograma(Semantico.codigo);
+            vm.run();
+            janela.exibirMensagem(vm.getSaida(), false);
+        } catch (Exception ex) {
+            janela.exibirMensagem("Erro durante execução: " + ex.getMessage(), true);
+        }
+    }
+
+    private static boolean analisarSintatico(Janela janela) {
         String codigo = janela.getCodigo();
         janela.limparMensagens();
 
         if (codigo.trim().isEmpty()) {
             janela.exibirMensagem("Nenhum código para analisar.", true);
-            return;
+            return false;
         }
 
         Semantico.codigo.clear();
@@ -84,7 +107,7 @@ public class Main {
                 StringBuilder sb = new StringBuilder("Foram encontrados erros léxicos:\n");
                 Linguagem20252.lexicalErrors.forEach(msg -> sb.append("• ").append(msg).append("\n"));
                 janela.exibirMensagem(sb.toString(), true);
-                return;
+                return false;
             }
 
             // ETAPA 2 — ANÁLISE SINTÁTICA
@@ -95,7 +118,7 @@ public class Main {
                 StringBuilder sb = new StringBuilder("Foram encontrados erros sintáticos:\n");
                 Linguagem20252.parseErrors.forEach(msg -> sb.append("• ").append(msg).append("\n"));
                 janela.exibirMensagem(sb.toString(), true);
-                return;
+                return false;
             }
 
             // ETAPA 3 — ANÁLISE SEMÂNTICA
@@ -103,43 +126,35 @@ public class Main {
                 StringBuilder sb = new StringBuilder("Foram encontrados erros semânticos:\n");
                 Semantico.errosSemanticos.forEach(msg -> sb.append("• ").append(msg).append("\n"));
                 janela.exibirMensagem(sb.toString(), true);
-                return;
+                return false;
             }
 
             janela.exibirMensagem("Análise concluída sem erros.", false);
-
-            // ETAPA 4 — EXIBIR CÓDIGO OBJETO
-            List<String[]> linhasTabela = new ArrayList<>();
-            for (Instrucao instrucao : Semantico.codigo) {
-                linhasTabela.add(new String[]{
-                        String.valueOf(instrucao.getPonteiro()),
-                        instrucao.getInstrucao(),
-                        String.valueOf(instrucao.getParametro())
-                });
-            }
-
-            JanelaCodigoObjeto janelaCodigo = new JanelaCodigoObjeto(linhasTabela);
-            janelaCodigo.setVisible(true);
-
-            // ETAPA 5 — EXECUÇÃO NA VM
-            try {
-                MaquinaVirtual vm = new MaquinaVirtual(1000);
-                vm.carregarPrograma(Semantico.codigo);
-                vm.run();
-                janela.exibirMensagem(vm.getSaida(), false);
-            } catch (Exception ex) {
-                janela.exibirMensagem("Erro durante execução: " + ex.getMessage(), true);
-            }
+            return true;
 
         } catch (ParseException e) {
             parser.reportParseError(e);
             StringBuilder sb = new StringBuilder("Foram encontrados erros sintáticos:\n");
             Linguagem20252.parseErrors.forEach(msg -> sb.append("• ").append(msg).append("\n"));
             janela.exibirMensagem(sb.toString(), true);
+            return false;
 
         } catch (Exception e) {
             janela.exibirMensagem("Erro inesperado: " + e.getMessage(), true);
             e.printStackTrace();
+            return false;
         }
+    }
+
+    private static List<String[]> montarCodigoObjeto() {
+        List<String[]> linhasTabela = new ArrayList<>();
+        for (Instrucao instrucao : Semantico.codigo) {
+            linhasTabela.add(new String[]{
+                    String.valueOf(instrucao.getPonteiro()),
+                    instrucao.getInstrucao(),
+                    String.valueOf(instrucao.getParametro())
+            });
+        }
+        return linhasTabela;
     }
 }

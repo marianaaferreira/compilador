@@ -211,6 +211,12 @@ public class Janela extends JFrame {
 
     public void addActionListenerCompilar(ActionListener listener) { compilarBtn.addActionListener(listener); }
     public void addActionListenerCompilarMenu(ActionListener listener) { compilarItem.addActionListener(listener); }
+    public void addActionListenerExecutar(ActionListener listener) {
+        executarBtn.addActionListener(listener);
+    }
+    public void addActionListenerExecutarMenu(ActionListener listener) {
+        executarItem.addActionListener(listener);
+    }
 
     public String getCodigo() { return areaEdicao.getText(); }
 

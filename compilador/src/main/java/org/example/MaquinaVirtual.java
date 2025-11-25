@@ -11,6 +11,8 @@ public class MaquinaVirtual {
     private List<Instrucao> codigo;
     private boolean halted;
     private final StringBuilder saida = new StringBuilder();
+    private boolean aguardandoEntrada = false;
+    private int tipoEntradaEsperado = 0;
 
     public MaquinaVirtual(int tamanhoPilha) {
         this.pilha = new Object[tamanhoPilha];
@@ -234,6 +236,31 @@ public class MaquinaVirtual {
 
             default:
                 throw new RuntimeException("Instrução inválida: " + op);
+        }
+    }
+
+    public boolean isAguardandoEntrada() {
+        return aguardandoEntrada;
+    }
+
+    public void fornecerEntrada(String entrada) {
+        try {
+            switch (tipoEntradaEsperado) {
+                case 1:
+                    pilha[topo++] = Integer.parseInt(entrada.trim());
+                    break;
+                case 2:
+                    pilha[topo++] = Double.parseDouble(entrada.trim());
+                    break;
+                case 3:
+                    pilha[topo++] = entrada;
+                    break;
+            }
+            aguardandoEntrada = false;
+            pc++; // continua para próxima instrução
+        } catch (Exception e) {
+            saida.append("ERRO: entrada inválida.\n");
+            halted = true;
         }
     }
 
